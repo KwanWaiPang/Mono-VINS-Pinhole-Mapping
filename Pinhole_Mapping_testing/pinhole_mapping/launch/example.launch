@@ -1,0 +1,55 @@
+<launch>
+   <!-- <arg name="config_path" default = "$(find feature_tracker)/../config/realsense/d455.yaml" /> -->
+  <arg name="config_path" default = "$(find feature_tracker)/../config/hku/davis346.yaml" />
+  <arg name="vins_path" default = "$(find feature_tracker)/../config/../" />
+  
+  <node name="feature_tracker" pkg="feature_tracker" type="feature_tracker" output="log">
+      <param name="config_file" type="string" value="$(arg config_path)" />
+      <param name="vins_folder" type="string" value="$(arg vins_path)" />
+  </node>
+
+  <node name="vins_estimator" pkg="vins_estimator" type="vins_estimator" output="log">
+      <param name="config_file" type="string" value="$(arg config_path)" />
+      <param name="vins_folder" type="string" value="$(arg vins_path)" />
+  </node>
+
+
+  <node pkg="pinhole_mapping" type="pinhole_mapping_node" name="pinhole_mapping" clear_params="true" output="screen">
+
+    <param name="cam_width" value="346" />
+    <param name="cam_height" value="260" />
+    <param name="cam_fx" value="243.48247333418462" />
+    <param name="cam_cx" value="177.22191130442948" />
+    <param name="cam_fy" value="242.83437823452573" />
+    <param name="cam_cy" value="117.92833352552883" />
+    <param name="cam_k1" value="-0.38932940078766665"/>
+    <param name="cam_k2" value="0.15946398959767422"/>
+    <param name="cam_r1" value="0.0014881647414925019"/>
+    <param name="cam_r2" value="-0.001559345555442927"/>
+
+    <!--downsample factor: 0 ~ 1-->
+    <param name="downsample_factor" value="1"/>
+
+    <!--need publish pointcloud-->
+    <param name="publish_pointcloud" value="true"/>
+
+    <!-- if using synchronize image and pose-->
+    <remap from="~image" to="/DAVIS346/image" />
+    <remap from="~posestamped" to="/vins_estimator/camera_pose" />
+
+  </node>  
+
+
+  <!-- 运行rosbag -->
+	<arg name="bag_name" value="/home/kwanwaipang/dataset/EVI-SAM/113005.bag"/>
+	  <node pkg="rosbag" type="play" name="rosbag" args="-r 1.0 -s 0.5 --clock --pause $(arg bag_name)" launch-prefix="gnome-terminal -x"/>
+
+  <!-- 是否开启rviz -->
+	<arg name="rviz" default="true" />
+  <group if="$(arg rviz)">
+		<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find pinhole_mapping_node)/pinhole_mapping_node.rviz" />
+	</group>
+
+
+
+</launch>
